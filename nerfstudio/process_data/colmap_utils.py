@@ -108,6 +108,7 @@ def run_colmap(
         camera_model: Camera model to use.
         camera_mask_path: Path to the camera mask.
         gpu: If True, use GPU.
+        gpu index: add multiple indexes in case of colamp parallel compute 
         verbose: If True, logs the output of the command.
         matching_method: Matching method to use.
         refine_intrinsics: If True, refine intrinsics.
@@ -127,6 +128,7 @@ def run_colmap(
         "--ImageReader.single_camera 1",
         f"--ImageReader.camera_model {camera_model.value}",
         f"--SiftExtraction.use_gpu {int(gpu)}",
+        #f"--SiftExtraction.gpu_index{0, 0}",
     ]
     if camera_mask_path is not None:
         feature_extractor_cmd.append(f"--ImageReader.camera_mask_path {camera_mask_path}")
@@ -141,6 +143,7 @@ def run_colmap(
         f"{colmap_cmd} {matching_method}_matcher",
         f"--database_path {colmap_dir / 'database.db'}",
         f"--SiftMatching.use_gpu {int(gpu)}",
+        #f"--SiftMatching.gpu_index {0, 0}",
     ]
     if matching_method == "vocab_tree":
         vocab_tree_filename = get_vocab_tree()
@@ -158,6 +161,7 @@ def run_colmap(
         f"--database_path {colmap_dir / 'database.db'}",
         f"--image_path {image_dir}",
         f"--output_path {sparse_dir}",
+        f"--Mapper.ba_use_gpu {int(gpu)}",
     ]
     if colmap_version >= Version("3.7"):
         mapper_cmd.append("--Mapper.ba_global_function_tolerance=1e-6")
@@ -179,6 +183,7 @@ def run_colmap(
                 f"--input_path {sparse_dir}/0",
                 f"--output_path {sparse_dir}/0",
                 "--BundleAdjustment.refine_principal_point 1",
+                f"--BundleAdjustment.use_gpu {int(gpu)}"
             ]
             run_command(" ".join(bundle_adjuster_cmd), verbose=verbose)
         CONSOLE.log("[bold green]:tada: Done refining intrinsics.")
