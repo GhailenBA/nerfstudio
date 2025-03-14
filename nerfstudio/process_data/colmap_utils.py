@@ -258,12 +258,12 @@ def run_glomap(
     mapper_cmd = " ".join(mapper_cmd)
 
     with status(
-        msg="[bold yellow]Running GLOMAP bundle adjustment... (This may take a while)",
+        msg="[bold yellow]Running GLOMAP mapper... (This may take a while)",
         spinner="circle",
         verbose=verbose,
     ):
         run_command(mapper_cmd, verbose=verbose)
-    CONSOLE.log("[bold green]:tada: Done GLOMAP bundle adjustment.")
+    CONSOLE.log("[bold green]:tada: Done GLOMAP mapper.")
 
     if refine_intrinsics:
         with status(msg="[bold yellow]Refine intrinsics...", spinner="dqpb", verbose=verbose):
