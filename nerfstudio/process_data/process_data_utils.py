@@ -556,7 +556,7 @@ def find_tool_feature_matcher_combination(
     """
     if sfm_tool == "any":
         if (feature_type in ("any", "sift")) and (matcher_type in ("any", "NN")):
-            sfm_tool = "colmap"
+            sfm_tool = "glomap"
         else:
             sfm_tool = "hloc"
 
