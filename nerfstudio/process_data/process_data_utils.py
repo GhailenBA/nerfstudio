@@ -318,7 +318,7 @@ def copy_images_list(
 
         crop_cmd = ""
         if crop_border_pixels is not None:
-            crop_cmd = f"crop=iw-{crop_border_pixels * 2}:ih-{crop_border_pixels * 2}[cropped];[cropped]"
+            crop_cmd = f"crop=iw-{crop_border_pixels*2}:ih-{crop_border_pixels*2}[cropped];[cropped]"
         elif crop_factor != (0.0, 0.0, 0.0, 0.0):
             height = 1 - crop_factor[0] - crop_factor[1]
             width = 1 - crop_factor[2] - crop_factor[3]
@@ -484,13 +484,13 @@ def downscale_images(
                 run_command(ffmpeg_cmd, verbose=verbose)
 
     CONSOLE.log("[bold green]:tada: Done downscaling images.")
-    downscale_text = [f"[bold blue]{2 ** (i + 1)}x[/bold blue]" for i in range(num_downscales)]
+    downscale_text = [f"[bold blue]{2**(i+1)}x[/bold blue]" for i in range(num_downscales)]
     downscale_text = ", ".join(downscale_text[:-1]) + " and " + downscale_text[-1]
     return f"We downsampled the images by {downscale_text}"
 
 
 def find_tool_feature_matcher_combination(
-    sfm_tool: Literal["any", "colmap", "hloc"],
+    sfm_tool: Literal["any", "colmap", "hloc", "glomap"],
     feature_type: Literal[
         "any",
         "sift",
@@ -518,7 +518,7 @@ def find_tool_feature_matcher_combination(
 ) -> Union[
     Tuple[None, None, None],
     Tuple[
-        Literal["colmap", "hloc"],
+        Literal["colmap", "glomap", "hloc"],
         Literal[
             "sift",
             "superpoint_aachen",
@@ -546,7 +546,7 @@ def find_tool_feature_matcher_combination(
     Basically, replace the default parameters 'any' by usable value
 
     Args:
-        sfm_tool: Sfm tool name (any, colmap, hloc)
+        sfm_tool: Sfm tool name (any, colmap, glomap, hloc)
         feature_type: Type of image features (any, sift, superpoint, ...)
         matcher_type: Type of matching algorithm (any, NN, superglue,...)
 
@@ -564,6 +564,10 @@ def find_tool_feature_matcher_combination(
         if (feature_type not in ("any", "sift")) or (matcher_type not in ("any", "NN")):
             return (None, None, None)
         return ("colmap", "sift", "NN")
+    if sfm_tool == "glomap":
+        if (feature_type not in ("any", "sift")) or (matcher_type not in ("any", "NN")):
+            return (None, None, None)
+        return ("glomap", "sift", "NN")
     if sfm_tool == "hloc":
         if feature_type in ("any", "superpoint"):
             feature_type = "superpoint_aachen"
