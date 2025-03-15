@@ -34,7 +34,7 @@ class ColmapConverterToNerfstudioDataset(BaseConverterToNerfstudioDataset):
     """Feature matching method to use. Vocab tree is recommended for a balance of speed
     and accuracy. Exhaustive is slower but more accurate. Sequential is faster but
     should only be used for videos."""
-    sfm_tool: Literal["any", "colmap", "hloc"] = "any"
+    sfm_tool: Literal["any", "colmap", "hloc", "glomap"] = "any"
     """Structure from motion tool to use. Colmap will use sift features, hloc can use
     many modern methods such as superpoint features and superglue matcher"""
     refine_pixsfm: bool = False
@@ -42,7 +42,7 @@ class ColmapConverterToNerfstudioDataset(BaseConverterToNerfstudioDataset):
     Only works with hloc sfm_tool"""
     refine_intrinsics: bool = True
     """If True, do bundle adjustment to refine intrinsics.
-    Only works with colmap sfm_tool"""
+    Only works with colmap/glomap sfm_tool"""
     feature_type: Literal[
         "any",
         "sift",
@@ -82,6 +82,8 @@ class ColmapConverterToNerfstudioDataset(BaseConverterToNerfstudioDataset):
     """
     colmap_cmd: str = "colmap"
     """How to call the COLMAP executable."""
+    glomap_cmd: str = "glomap"
+    """How to call the GLOMAP executable."""
     images_per_equirect: Literal[8, 14] = 8
     """Number of samples per image to take from each equirectangular image.
        Used only when camera-type is equirectangular.
@@ -144,7 +146,9 @@ class ColmapConverterToNerfstudioDataset(BaseConverterToNerfstudioDataset):
             summary_log.append(colmap_utils.get_matching_summary(num_frames, num_matched_frames))
 
         else:
-            CONSOLE.log("[bold yellow]Warning: Could not find existing COLMAP results. Not generating transforms.json")
+            CONSOLE.log(
+                "[bold yellow]Warning: Could not find existing COLMAP results. " "Not generating transforms.json"
+            )
         return summary_log
 
     def _export_depth(self) -> Tuple[Optional[Dict[int, Path]], List[str]]:
@@ -219,9 +223,21 @@ class ColmapConverterToNerfstudioDataset(BaseConverterToNerfstudioDataset):
                 refine_intrinsics=self.refine_intrinsics,
                 colmap_cmd=self.colmap_cmd,
             )
+        elif sfm_tool == "glomap":
+            colmap_utils.run_glomap(
+                image_dir=image_dir,
+                glomap_dir=self.absolute_colmap_path,
+                camera_model=CAMERA_MODELS[self.camera_type],
+                camera_mask_path=mask_path,
+                gpu=self.gpu,
+                verbose=self.verbose,
+                matching_method=self.matching_method,
+                refine_intrinsics=self.refine_intrinsics,
+                glomap_cmd=self.glomap_cmd,
+            )
         elif sfm_tool == "hloc":
             if mask_path is not None:
-                raise RuntimeError("Cannot use a mask with hloc. Please remove the cropping options and try again.")
+                raise RuntimeError("Cannot use a mask with hloc. Please remove the cropping options " "and try again.")
 
             assert feature_type is not None
             assert matcher_type is not None
@@ -238,7 +254,7 @@ class ColmapConverterToNerfstudioDataset(BaseConverterToNerfstudioDataset):
                 use_single_camera_mode=self.use_single_camera_mode,
             )
         else:
-            raise RuntimeError("Invalid combination of sfm_tool, feature_type, and matcher_type, exiting")
+            raise RuntimeError("Invalid combination of sfm_tool, feature_type, and matcher_type, " "exiting")
 
     def __post_init__(self) -> None:
         super().__post_init__()

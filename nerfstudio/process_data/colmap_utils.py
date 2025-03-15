@@ -213,7 +213,7 @@ def run_glomap(
 
     colmap_database_path = glomap_dir / "database.db"
     colmap_database_path.unlink(missing_ok=True)
-    CONSOLE.log("[bold green]Running GLOMAP on top of COLMAP")
+    CONSOLE.log("[bold green]Running GLOMAP")
     # Feature extraction
     feature_extractor_cmd = [
         f"colmap feature_extractor",
