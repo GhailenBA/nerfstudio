@@ -643,7 +643,7 @@ method_configs["splatfacto"] = TrainerConfig(
         },
     },
     viewer=ViewerConfig(num_rays_per_chunk=1 << 15),
-    vis="viewer",
+    vis="none",
 )
 
 method_configs["splatfacto-big"] = TrainerConfig(
