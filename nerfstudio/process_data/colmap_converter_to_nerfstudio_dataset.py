@@ -105,7 +105,7 @@ class ColmapConverterToNerfstudioDataset(BaseConverterToNerfstudioDataset):
     use_single_camera_mode: bool = True
     """Whether to assume all images taken with the same camera characteristics, set to False for multiple cameras in colmap (only works with hloc sfm_tool).
     """
-    max_num_features: Literal [ 2048, 4096, 8192] = 8192
+    max_num_features: Literal [ 2048, 4096, 6144, 8192] = 6144
     """SIFT max number of features"""
 
     @staticmethod
