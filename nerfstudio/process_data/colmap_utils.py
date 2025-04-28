@@ -95,6 +95,7 @@ def run_colmap(
     camera_model: CameraModel,
     camera_mask_path: Optional[Path] = None,
     gpu: bool = True,
+    max_num_features: int = 4096,
     verbose: bool = False,
     matching_method: Literal["vocab_tree", "exhaustive", "sequential"] = "vocab_tree",
     refine_intrinsics: bool = True,
@@ -127,6 +128,7 @@ def run_colmap(
         "--ImageReader.single_camera 1",
         f"--ImageReader.camera_model {camera_model.value}",
         f"--SiftExtraction.use_gpu {int(gpu)}",
+        f"--SiftExtraction.max_num_features {max_num_features}",
     ]
     if camera_mask_path is not None:
         feature_extractor_cmd.append(f"--ImageReader.camera_mask_path {camera_mask_path}")
@@ -134,7 +136,7 @@ def run_colmap(
     with status(msg="[bold yellow]Running COLMAP feature extractor...", spinner="moon", verbose=verbose):
         run_command(feature_extractor_cmd, verbose=verbose)
 
-    CONSOLE.log("[bold green]:tada: Done extracting COLMAP features.")
+    CONSOLE.log(f"[bold green]:tada: Done extracting COLMAP features with {max_num_features} max number of features.")
 
     # Feature matching
     feature_matcher_cmd = [
@@ -190,6 +192,7 @@ def run_glomap(
     camera_model: CameraModel,
     camera_mask_path: Optional[Path] = None,
     gpu: bool = True,
+    max_num_features: int = 4096,
     verbose: bool = False,
     matching_method: Literal["vocab_tree", "exhaustive", "sequential"] = "vocab_tree",
     refine_intrinsics: bool = True,
@@ -222,6 +225,7 @@ def run_glomap(
         "--ImageReader.single_camera 1",
         f"--ImageReader.camera_model {camera_model.value}",
         f"--SiftExtraction.use_gpu {int(gpu)}",
+        f"--SiftExtraction.max_num_features {max_num_features}",
     ]
     if camera_mask_path is not None:
         feature_extractor_cmd.append(f"--ImageReader.camera_mask_path {camera_mask_path}")
@@ -229,7 +233,7 @@ def run_glomap(
     with status(msg="[bold yellow]Running COLMAP feature extractor...", spinner="moon", verbose=verbose):
         run_command(feature_extractor_cmd, verbose=verbose)
 
-    CONSOLE.log("[bold green]:tada: Done extracting COLMAP features.")
+    CONSOLE.log(f"[bold green]:tada: Done extracting COLMAP features with {max_num_features} max number of features.")
 
     # Feature matching
     feature_matcher_cmd = [
