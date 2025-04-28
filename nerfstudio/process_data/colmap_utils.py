@@ -136,7 +136,7 @@ def run_colmap(
     with status(msg="[bold yellow]Running COLMAP feature extractor...", spinner="moon", verbose=verbose):
         run_command(feature_extractor_cmd, verbose=verbose)
 
-    CONSOLE.log("[bold green]:tada: Done extracting COLMAP features.")
+    CONSOLE.log(f"[bold green]:tada: Done extracting COLMAP features with {max_num_features} max number of features.")
 
     # Feature matching
     feature_matcher_cmd = [
@@ -233,7 +233,7 @@ def run_glomap(
     with status(msg="[bold yellow]Running COLMAP feature extractor...", spinner="moon", verbose=verbose):
         run_command(feature_extractor_cmd, verbose=verbose)
 
-    CONSOLE.log("[bold green]:tada: Done extracting COLMAP features.")
+    CONSOLE.log(f"[bold green]:tada: Done extracting COLMAP features with {max_num_features} max number of features.")
 
     # Feature matching
     feature_matcher_cmd = [
