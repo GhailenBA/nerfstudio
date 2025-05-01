@@ -109,6 +109,8 @@ class ColmapConverterToNerfstudioDataset(BaseConverterToNerfstudioDataset):
     """SIFT max number of features"""
     json_path: str = ""
     """JSON file path for initial guess"""
+    skip_init: bool = True
+    """SKIP initialization from json file"""
 
 
     @staticmethod
@@ -229,6 +231,7 @@ class ColmapConverterToNerfstudioDataset(BaseConverterToNerfstudioDataset):
                 refine_intrinsics=self.refine_intrinsics,
                 colmap_cmd=self.colmap_cmd,
                 json_path=self.json_path,
+                skip_init=self.skip_init,
             )
         elif sfm_tool == "glomap":
             colmap_utils.run_glomap(
@@ -243,6 +246,7 @@ class ColmapConverterToNerfstudioDataset(BaseConverterToNerfstudioDataset):
                 refine_intrinsics=self.refine_intrinsics,
                 glomap_cmd=self.glomap_cmd,
                 json_path=self.json_path,
+                skip_init=self.skip_init,
             )
         elif sfm_tool == "hloc":
             if mask_path is not None:

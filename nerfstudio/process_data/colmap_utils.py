@@ -101,6 +101,7 @@ def run_colmap(
     refine_intrinsics: bool = True,
     colmap_cmd: str = "colmap",
     json_path: str ="",
+    skip_init: bool = True,
 ) -> None:
     """Runs COLMAP on the images.
 
@@ -120,7 +121,6 @@ def run_colmap(
 
     colmap_database_path = colmap_dir / "database.db"
     colmap_database_path.unlink(missing_ok=True)
-    camera_initial_guess = get_camera_params_from_transforms(json_path"/transforms.json")
 
     # Feature extraction
     feature_extractor_cmd = [
@@ -132,6 +132,11 @@ def run_colmap(
         f"--SiftExtraction.use_gpu {int(gpu)}",
         f"--SiftExtraction.max_num_features {max_num_features}",
     ]
+    #init camera intrinsics
+    if not skip_init:
+        CONSOLE.log("[bold green]JSON file init!")
+        camera_initial_guess = get_camera_params_from_transforms(json_path+"/transforms.json")
+        feature_extractor_cmd.append(f"--ImageReader.camera_params {camera_initial_guess} ")
     if camera_mask_path is not None:
         feature_extractor_cmd.append(f"--ImageReader.camera_mask_path {camera_mask_path}")
     feature_extractor_cmd = " ".join(feature_extractor_cmd)
@@ -200,6 +205,7 @@ def run_glomap(
     refine_intrinsics: bool = True,
     glomap_cmd: str = "glomap",
     json_path: str ="",
+    skip_init: bool = True,
 ) -> None:
     """Runs GLOMAP on the images.
 
@@ -220,8 +226,7 @@ def run_glomap(
     colmap_database_path = glomap_dir / "database.db"
     colmap_database_path.unlink(missing_ok=True)
     CONSOLE.log("[bold green]Running GLOMAP")
-    # Get intrinsinc initial guess
-    camera_initial_guess = get_camera_params_from_transforms(json_path"/transforms.json")
+
     # Feature extraction
     feature_extractor_cmd = [
         f"colmap feature_extractor",
@@ -233,6 +238,11 @@ def run_glomap(
         f"--SiftExtraction.max_num_features {max_num_features}",
         f"--ImageReader.camera_params {camera_initial_guess}",
     ]
+    #init camera intrinsics
+    if not skip_init:
+        CONSOLE.log("[bold green]JSON file init!")
+        camera_initial_guess = get_camera_params_from_transforms(json_path+"/transforms.json")
+        feature_extractor_cmd.append(f"--ImageReader.camera_params {camera_initial_guess} ")
     if camera_mask_path is not None:
         feature_extractor_cmd.append(f"--ImageReader.camera_mask_path {camera_mask_path}")
     feature_extractor_cmd = " ".join(feature_extractor_cmd)
