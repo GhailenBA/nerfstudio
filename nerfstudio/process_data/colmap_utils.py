@@ -231,6 +231,7 @@ def run_glomap(
         f"--ImageReader.camera_model {camera_model.value}",
         f"--SiftExtraction.use_gpu {int(gpu)}",
         f"--SiftExtraction.max_num_features {max_num_features}",
+        f"--ImageReader.camera_params {camera_initial_guess}",
     ]
     if camera_mask_path is not None:
         feature_extractor_cmd.append(f"--ImageReader.camera_mask_path {camera_mask_path}")
@@ -308,7 +309,7 @@ def get_camera_params_from_transforms(transforms_path):
         raise ValueError("Missing one or more required intrinsics in transforms.json")
 
     # Format for RADIAL model: fx, fy, cx, cy, k1, k2
-    camera_params = f"{fl_x},{fl_y},{cx},{cy},{k1},{k2}"
+    camera_params = f"{fl_x},{fl_y},{cx},{cy},{k1},{k2},{p1},{p2} "
     return camera_params
 
 def parse_colmap_camera_params(camera) -> Dict[str, Any]:
