@@ -100,6 +100,7 @@ def run_colmap(
     matching_method: Literal["vocab_tree", "exhaustive", "sequential"] = "vocab_tree",
     refine_intrinsics: bool = True,
     colmap_cmd: str = "colmap",
+    json_path: str ="",
 ) -> None:
     """Runs COLMAP on the images.
 
@@ -119,6 +120,7 @@ def run_colmap(
 
     colmap_database_path = colmap_dir / "database.db"
     colmap_database_path.unlink(missing_ok=True)
+    camera_initial_guess = get_camera_params_from_transforms(json_path"/transforms.json")
 
     # Feature extraction
     feature_extractor_cmd = [
@@ -197,6 +199,7 @@ def run_glomap(
     matching_method: Literal["vocab_tree", "exhaustive", "sequential"] = "vocab_tree",
     refine_intrinsics: bool = True,
     glomap_cmd: str = "glomap",
+    json_path: str ="",
 ) -> None:
     """Runs GLOMAP on the images.
 
@@ -217,6 +220,8 @@ def run_glomap(
     colmap_database_path = glomap_dir / "database.db"
     colmap_database_path.unlink(missing_ok=True)
     CONSOLE.log("[bold green]Running GLOMAP")
+    # Get intrinsinc initial guess
+    camera_initial_guess = get_camera_params_from_transforms(json_path"/transforms.json")
     # Feature extraction
     feature_extractor_cmd = [
         f"colmap feature_extractor",
@@ -280,6 +285,31 @@ def run_glomap(
             run_command(" ".join(bundle_adjuster_cmd), verbose=verbose)
         CONSOLE.log("[bold green]:tada: Done refining intrinsics.")
 
+def get_camera_params_from_transforms(transforms_path):
+    """
+    Extracts intrinsic parameters from a transforms.json file
+    and returns a COLMAP-compatible camera_params string.
+    """
+    # Load transforms.json
+    with open(transforms_path, "r") as f:
+        data = json.load(f)
+
+    # Extract required intrinsics
+    fl_x = data.get("fl_x")
+    fl_y = data.get("fl_y")
+    cx = data.get("cx")
+    cy = data.get("cy")
+    k1 = data.get("k1", 0.0)
+    k2 = data.get("k2", 0.0)
+    p1 = data.get("p1", 0.0)
+    p2 = data.get("p2", 0.0)
+    # Ensure required values are present
+    if None in [fl_x, fl_y, cx, cy]:
+        raise ValueError("Missing one or more required intrinsics in transforms.json")
+
+    # Format for RADIAL model: fx, fy, cx, cy, k1, k2
+    camera_params = f"{fl_x},{fl_y},{cx},{cy},{k1},{k2}"
+    return camera_params
 
 def parse_colmap_camera_params(camera) -> Dict[str, Any]:
     """
