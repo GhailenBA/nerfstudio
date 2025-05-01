@@ -236,7 +236,6 @@ def run_glomap(
         f"--ImageReader.camera_model {camera_model.value}",
         f"--SiftExtraction.use_gpu {int(gpu)}",
         f"--SiftExtraction.max_num_features {max_num_features}",
-        f"--ImageReader.camera_params {camera_initial_guess}",
     ]
     #init camera intrinsics
     if not skip_init:
