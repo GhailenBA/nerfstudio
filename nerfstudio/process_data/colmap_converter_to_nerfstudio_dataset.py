@@ -108,7 +108,7 @@ class ColmapConverterToNerfstudioDataset(BaseConverterToNerfstudioDataset):
     max_num_features: Literal [ 2048, 4096, 6144, 8192] = 4096
     """SIFT max number of features"""
     json_path: str = ""
-    """JSON file path for initial guess"""
+    """JSON file storage path"""
     skip_init: bool = True
     """SKIP initialization from json file"""
 
