@@ -19,7 +19,7 @@ Tools supporting the execution of COLMAP and preparation of COLMAP-based dataset
 import json
 from pathlib import Path
 from typing import Any, Dict, Literal, Optional, Union
-
+import os
 import appdirs
 import cv2
 import numpy as np
@@ -41,7 +41,9 @@ from nerfstudio.process_data.process_data_utils import CameraModel
 from nerfstudio.utils import colormaps
 from nerfstudio.utils.rich_utils import CONSOLE, status
 from nerfstudio.utils.scripts import run_command
+from scipy.spatial.transform import Rotation as R
 
+import sqlite3
 
 def get_colmap_version(colmap_cmd: str, default_version: str = "3.8") -> Version:
     """Returns the version of COLMAP.
@@ -100,6 +102,8 @@ def run_colmap(
     matching_method: Literal["vocab_tree", "exhaustive", "sequential"] = "vocab_tree",
     refine_intrinsics: bool = True,
     colmap_cmd: str = "colmap",
+    json_path: str ="",
+    skip_init: bool = True,
 ) -> None:
     """Runs COLMAP on the images.
 
@@ -119,7 +123,6 @@ def run_colmap(
 
     colmap_database_path = colmap_dir / "database.db"
     colmap_database_path.unlink(missing_ok=True)
-
     # Feature extraction
     feature_extractor_cmd = [
         f"{colmap_cmd} feature_extractor",
@@ -130,6 +133,10 @@ def run_colmap(
         f"--SiftExtraction.use_gpu {int(gpu)}",
         f"--SiftExtraction.max_num_features {max_num_features}",
     ]
+    if not skip_init:
+        CONSOLE.log("[bold green]JSON file init!")
+        camera_initial_guess = get_camera_params_from_transforms(json_path+"/transforms.json") #to add support for other camera model
+        feature_extractor_cmd.append(f"--ImageReader.camera_params {camera_initial_guess} ")
     if camera_mask_path is not None:
         feature_extractor_cmd.append(f"--ImageReader.camera_mask_path {camera_mask_path}")
     feature_extractor_cmd = " ".join(feature_extractor_cmd)
@@ -155,6 +162,8 @@ def run_colmap(
     # Bundle adjustment
     sparse_dir = colmap_dir / "sparse"
     sparse_dir.mkdir(parents=True, exist_ok=True)
+    if not skip_init:
+        load_transform_matrices(json_path, colmap_dir)
     mapper_cmd = [
         f"{colmap_cmd} mapper",
         f"--database_path {colmap_dir / 'database.db'}",
@@ -197,6 +206,8 @@ def run_glomap(
     matching_method: Literal["vocab_tree", "exhaustive", "sequential"] = "vocab_tree",
     refine_intrinsics: bool = True,
     glomap_cmd: str = "glomap",
+    json_path: str ="",
+    skip_init: bool = True,
 ) -> None:
     """Runs GLOMAP on the images.
 
@@ -227,6 +238,10 @@ def run_glomap(
         f"--SiftExtraction.use_gpu {int(gpu)}",
         f"--SiftExtraction.max_num_features {max_num_features}",
     ]
+    if not skip_init:
+        CONSOLE.log("[bold green]JSON file init!")
+        camera_initial_guess = get_camera_params_from_transforms(json_path+"/transforms.json")
+        feature_extractor_cmd.append(f"--ImageReader.camera_params {camera_initial_guess} ")
     if camera_mask_path is not None:
         feature_extractor_cmd.append(f"--ImageReader.camera_mask_path {camera_mask_path}")
     feature_extractor_cmd = " ".join(feature_extractor_cmd)
@@ -234,7 +249,6 @@ def run_glomap(
         run_command(feature_extractor_cmd, verbose=verbose)
 
     CONSOLE.log(f"[bold green]:tada: Done extracting COLMAP features with {max_num_features} max number of features.")
-
     # Feature matching
     feature_matcher_cmd = [
         f"colmap {matching_method}_matcher",
@@ -252,6 +266,8 @@ def run_glomap(
     # Bundle adjustment
     sparse_dir = glomap_dir / "sparse"
     sparse_dir.mkdir(parents=True, exist_ok=True)
+    if not skip_init:
+        load_transform_matrices(json_path, glomap_dir)
     mapper_cmd = [
         f"{glomap_cmd} mapper",
         f"--database_path {glomap_dir / 'database.db'}",
@@ -280,6 +296,84 @@ def run_glomap(
             run_command(" ".join(bundle_adjuster_cmd), verbose=verbose)
         CONSOLE.log("[bold green]:tada: Done refining intrinsics.")
 
+def get_camera_params_from_transforms(transforms_path):
+    """
+    Extracts intrinsic parameters from a transforms.json file
+    and returns a COLMAP-compatible camera_params string.
+    """
+    # Load transforms.json
+    with open(transforms_path, "r") as f:
+        data = json.load(f)
+
+    # Extract required intrinsics
+    fl_x = data.get("fl_x")
+    fl_y = data.get("fl_y")
+    cx = data.get("cx")
+    cy = data.get("cy")
+    k1 = data.get("k1", 0.0)
+    k2 = data.get("k2", 0.0)
+    p1 = data.get("p1", 0.0)
+    p2 = data.get("p2", 0.0)
+    # Ensure required values are present
+    if None in [fl_x, fl_y, cx, cy]:
+        raise ValueError("Missing one or more required intrinsics in transforms.json")
+
+    # Format for RADIAL model: fx, fy, cx, cy, k1, k2
+    return f"{fl_x},{fl_y},{cx},{cy},{k1},{k2},{p1},{p2}"
+
+def load_transform_matrices(json_path, glomap_dir):
+    with open(json_path+"/transforms.json") as f:
+        data = json.load(f)
+    
+
+    db_path = glomap_dir.joinpath("database.db")
+    conn = sqlite3.connect(str(db_path))
+    db = conn.cursor()
+    db.execute("PRAGMA table_info(images);")
+    columns = [col[1] for col in db.fetchall()]
+    required = ['prior_qw', 'prior_qx', 'prior_qy', 'prior_qz', 'prior_tx', 'prior_ty', 'prior_tz']
+    updated = 0
+    image_lines = []
+    db.execute("SELECT image_id, name FROM images ORDER BY image_id")
+    
+    for idx, frame in enumerate(data["frames"]):
+        T_c2w = np.array(frame["transform_matrix"])
+        T_w2c = np.linalg.inv(T_c2w)
+
+        R_w2c = T_w2c[:3, :3]
+        t_w2c = T_w2c[:3, 3]
+
+        # Convert rotation to quaternion (w, x, y, z)
+        quat = R.from_matrix(R_w2c).as_quat()
+        qx, qy, qz, qw = quat  # scipy returns (x, y, z, w)
+        image_name = os.path.basename(frame["file_path"])  # ✅ only the filename
+        # Parse and increment the frame index
+        base, ext = os.path.splitext(image_name)           # "frame_00000", ".jpg"
+        prefix, index_str = base.split('_')                # "frame", "00000"
+        new_index = int(index_str) + 1                     # offset by +1
+        adjusted_name = f"{prefix}_{new_index:05d}{ext}"   # e.g. "frame_00001.jpg"
+
+        
+        
+        db.execute("SELECT image_id FROM images WHERE name = ?", (adjusted_name,))
+        result = db.fetchone()
+        if result is not None:
+            image_id = result[0]
+            db.execute("""
+                UPDATE images
+                SET 
+                    prior_qw = ?, prior_qx = ?, prior_qy = ?, prior_qz = ?,
+                    prior_tx = ?, prior_ty = ?, prior_tz = ?
+                WHERE image_id = ?
+            """, (qw, qx, qy, qz, t_w2c[0], t_w2c[1], t_w2c[2], image_id))
+            updated += 1
+        else:
+            print(f"Warning: Image '{adjusted_name}' not found in database.")
+
+    print(f"✅ Pose priors updated for {updated} images in database.")
+    conn.commit()
+    conn.close()
+    print("DATABASE updated with initial guess")
 
 def parse_colmap_camera_params(camera) -> Dict[str, Any]:
     """

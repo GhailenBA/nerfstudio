@@ -107,6 +107,11 @@ class ColmapConverterToNerfstudioDataset(BaseConverterToNerfstudioDataset):
     """
     max_num_features: Literal [ 2048, 4096, 6144, 8192] = 4096
     """SIFT max number of features"""
+    json_path: str = ""
+    """JSON file storage path"""
+    skip_init: bool = True
+    """SKIP initialization from json file"""
+
 
     @staticmethod
     def default_colmap_path() -> Path:
@@ -225,6 +230,8 @@ class ColmapConverterToNerfstudioDataset(BaseConverterToNerfstudioDataset):
                 matching_method=self.matching_method,
                 refine_intrinsics=self.refine_intrinsics,
                 colmap_cmd=self.colmap_cmd,
+                json_path=self.json_path,
+                skip_init=self.skip_init,
             )
         elif sfm_tool == "glomap":
             colmap_utils.run_glomap(
@@ -238,6 +245,8 @@ class ColmapConverterToNerfstudioDataset(BaseConverterToNerfstudioDataset):
                 matching_method=self.matching_method,
                 refine_intrinsics=self.refine_intrinsics,
                 glomap_cmd=self.glomap_cmd,
+                json_path=self.json_path,
+                skip_init=self.skip_init,
             )
         elif sfm_tool == "hloc":
             if mask_path is not None:
