@@ -350,8 +350,8 @@ def load_transform_matrices(json_path, glomap_dir):
         # Parse and increment the frame index
         base, ext = os.path.splitext(image_name)           # "frame_00000", ".jpg"
         prefix, index_str = base.split('_')                # "frame", "00000"
-        new_index = int(index_str) + 1                     # offset by +1
-        adjusted_name = f"{prefix}_{new_index:05d}{ext}"   # e.g. "frame_00001.jpg"
+        #new_index = int(index_str) + 1                     # offset by +1
+        adjusted_name = f"{prefix}_{int(index_str):05d}{ext}"   # e.g. "frame_00001.jpg"
 
         
         
