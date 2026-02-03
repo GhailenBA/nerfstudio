@@ -72,10 +72,14 @@ def get_vocab_tree() -> Path:
     Returns:
         The path to the vocab tree.
     """
-    vocab_tree_filename = Path(appdirs.user_data_dir("nerfstudio")) / "vocab_tree.fbow"
+    # switch to faiss vocab tree colmap v3.12.1 or above
+    vocab_tree_filename = (Path(appdirs.user_data_dir("nerfstudio")) / "vocab_tree_faiss_flickr100K_words256K.bin")
 
     if not vocab_tree_filename.exists():
-        r = requests.get("https://demuc.de/colmap/vocab_tree_flickr100K_words32K.bin", stream=True)
+        r = requests.get(
+            "https://github.com/colmap/colmap/releases/download/3.11.1/vocab_tree_faiss_flickr100K_words256K.bin",
+            stream=True,
+        )
         vocab_tree_filename.parent.mkdir(parents=True, exist_ok=True)
         with open(vocab_tree_filename, "wb") as f:
             total_length = r.headers.get("content-length")
@@ -130,7 +134,7 @@ def run_colmap(
         f"--image_path {image_dir}",
         "--ImageReader.single_camera 1",
         f"--ImageReader.camera_model {camera_model.value}",
-        f"--SiftExtraction.use_gpu {int(gpu)}",
+        #f"--SiftExtraction.use_gpu {int(gpu)}",
         f"--SiftExtraction.max_num_features {max_num_features}",
     ]
     if not skip_init:
@@ -149,7 +153,7 @@ def run_colmap(
     feature_matcher_cmd = [
         f"{colmap_cmd} {matching_method}_matcher",
         f"--database_path {colmap_dir / 'database.db'}",
-        f"--SiftMatching.use_gpu {int(gpu)}",
+        #f"--SiftMatching.use_gpu {int(gpu)}",
     ]
     if matching_method == "vocab_tree":
         vocab_tree_filename = get_vocab_tree()
@@ -235,7 +239,7 @@ def run_glomap(
         f"--image_path {image_dir}",
         "--ImageReader.single_camera 1",
         f"--ImageReader.camera_model {camera_model.value}",
-        f"--SiftExtraction.use_gpu {int(gpu)}",
+        #f"--SiftExtraction.use_gpu {int(gpu)}",
         f"--SiftExtraction.max_num_features {max_num_features}",
     ]
     if not skip_init:
@@ -253,7 +257,7 @@ def run_glomap(
     feature_matcher_cmd = [
         f"colmap {matching_method}_matcher",
         f"--database_path {glomap_dir / 'database.db'}",
-        f"--SiftMatching.use_gpu {int(gpu)}",
+        #f"--SiftMatching.use_gpu {int(gpu)}",
     ]
     if matching_method == "vocab_tree":
         vocab_tree_filename = get_vocab_tree()
